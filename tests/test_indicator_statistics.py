@@ -2,69 +2,72 @@ from .config import error_analysis, sample_data, CORRELATION, CORRELATION_THRESH
 from .context import pandas_ta
 
 from unittest import TestCase, skip
-import pandas.util.testing as pdt
-from pandas import DataFrame, Series
+import pandas.testing as pdt
+from pandas import Series
 
 import talib as tal
-
 
 
 class TestStatistics(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.data = sample_data
-        cls.open = cls.data['open']
-        cls.high = cls.data['high']
-        cls.low = cls.data['low']
-        cls.close = cls.data['close']
-        cls.volume = cls.data['volume']
+        cls.data.columns = cls.data.columns.str.lower()
+        cls.open = cls.data["open"]
+        cls.high = cls.data["high"]
+        cls.low = cls.data["low"]
+        cls.close = cls.data["close"]
+        if "volume" in cls.data.columns:
+            cls.volume = cls.data["volume"]
 
     @classmethod
     def tearDownClass(cls):
-        del cls.data
         del cls.open
         del cls.high
         del cls.low
         del cls.close
-        del cls.volume
+        if hasattr(cls, "volume"):
+            del cls.volume
+        del cls.data
+
+    def setUp(self): pass
+    def tearDown(self): pass
 
 
-    def setUp(self):
-        self.stats = pandas_ta.statistics
-
-    def tearDown(self):
-        del self.stats
-    
+    def test_entropy(self):
+        result = pandas_ta.entropy(self.close)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "ENTP_10")
 
     def test_kurtosis(self):
-        result = self.stats.kurtosis(self.close)
+        result = pandas_ta.kurtosis(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'KURT_30')
+        self.assertEqual(result.name, "KURT_30")
 
     def test_mad(self):
-        result = self.stats.mad(self.close)
+        result = pandas_ta.mad(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'MAD_30')
+        self.assertEqual(result.name, "MAD_30")
 
     def test_median(self):
-        result = self.stats.median(self.close)
+        result = pandas_ta.median(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'MEDIAN_30')
+        self.assertEqual(result.name, "MEDIAN_30")
 
     def test_quantile(self):
-        result = self.stats.quantile(self.close)
+        result = pandas_ta.quantile(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'QTL_30_0.5')
+        self.assertEqual(result.name, "QTL_30_0.5")
 
     def test_skew(self):
-        result = self.stats.skew(self.close)
+        result = pandas_ta.skew(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'SKEW_30')
+        self.assertEqual(result.name, "SKEW_30")
 
     def test_stdev(self):
-        result = self.stats.stdev(self.close)
+        result = pandas_ta.stdev(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'STDEV_30')
+        self.assertEqual(result.name, "STDEV_30")
 
         try:
             expected = tal.STDDEV(self.close, 30)
@@ -77,9 +80,9 @@ class TestStatistics(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_variance(self):
-        result = self.stats.variance(self.close)
+        result = pandas_ta.variance(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'VAR_30')
+        self.assertEqual(result.name, "VAR_30")
 
         try:
             expected = tal.VAR(self.close, 30)
@@ -92,6 +95,6 @@ class TestStatistics(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_zscore(self):
-        result = self.stats.zscore(self.close)
+        result = pandas_ta.zscore(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'Z_30')
+        self.assertEqual(result.name, "Z_30")

@@ -2,45 +2,47 @@ from .config import CORRELATION, CORRELATION_THRESHOLD, error_analysis, sample_d
 from .context import pandas_ta
 
 from unittest import TestCase
-import pandas.util.testing as pdt
+import pandas.testing as pdt
 from pandas import DataFrame, Series
 
-import pandas as pd
 import talib as tal
-
 
 
 class TestOverlap(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.data = sample_data
-        cls.open = cls.data['open']
-        cls.high = cls.data['high']
-        cls.low = cls.data['low']
-        cls.close = cls.data['close']
-        cls.volume = cls.data['volume']
+        cls.data.columns = cls.data.columns.str.lower()
+        cls.open = cls.data["open"]
+        cls.high = cls.data["high"]
+        cls.low = cls.data["low"]
+        cls.close = cls.data["close"]
+        if "volume" in cls.data.columns:
+            cls.volume = cls.data["volume"]
 
     @classmethod
     def tearDownClass(cls):
-        del cls.data
         del cls.open
         del cls.high
         del cls.low
         del cls.close
-        del cls.volume
+        if hasattr(cls, "volume"):
+            del cls.volume
+        del cls.data
+
+    def setUp(self): pass
+    def tearDown(self): pass
 
 
-    def setUp(self):
-        self.overlap = pandas_ta.overlap
-
-    def tearDown(self):
-        del self.overlap
-    
+    def test_alma(self):
+        result = pandas_ta.alma(self.close)# , length=None, sigma=None, distribution_offset=)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "ALMA_10_6.0_0.85")
 
     def test_dema(self):
-        result = self.overlap.dema(self.close)
+        result = pandas_ta.dema(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'DEMA_10')
+        self.assertEqual(result.name, "DEMA_10")
 
         try:
             expected = tal.DEMA(self.close, 10)
@@ -53,9 +55,9 @@ class TestOverlap(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_ema(self):
-        result = self.overlap.ema(self.close, presma=False)
+        result = pandas_ta.ema(self.close, presma=False)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'EMA_10')
+        self.assertEqual(result.name, "EMA_10")
 
         try:
             expected = tal.EMA(self.close, 10)
@@ -68,19 +70,24 @@ class TestOverlap(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_fwma(self):
-        result = self.overlap.fwma(self.close)
+        result = pandas_ta.fwma(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'FWMA_10')
+        self.assertEqual(result.name, "FWMA_10")
+
+    def test_hilo(self):
+        result = pandas_ta.hilo(self.high, self.low, self.close)
+        self.assertIsInstance(result, DataFrame)
+        self.assertEqual(result.name, "HILO_13_21")
 
     def test_hl2(self):
-        result = self.overlap.hl2(self.high, self.low)
+        result = pandas_ta.hl2(self.high, self.low)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'HL2')
+        self.assertEqual(result.name, "HL2")
 
     def test_hlc3(self):
-        result = self.overlap.hlc3(self.high, self.low, self.close)
+        result = pandas_ta.hlc3(self.high, self.low, self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'HLC3')
+        self.assertEqual(result.name, "HLC3")
 
         try:
             expected = tal.TYPPRICE(self.high, self.low, self.close)
@@ -93,21 +100,31 @@ class TestOverlap(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_hma(self):
-        result = self.overlap.hma(self.close)
+        result = pandas_ta.hma(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'HMA_10')
+        self.assertEqual(result.name, "HMA_10")
+
+    def test_hwma(self):
+        result = pandas_ta.hwma(self.close)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "HWMA_0.2_0.1_0.1")
+
+    def test_kama(self):
+        result = pandas_ta.kama(self.close)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "KAMA_10_2_30")
 
     def test_ichimoku(self):
-        ichimoku, span = self.overlap.ichimoku(self.high, self.low, self.close)
+        ichimoku, span = pandas_ta.ichimoku(self.high, self.low, self.close)
         self.assertIsInstance(ichimoku, DataFrame)
         self.assertIsInstance(span, DataFrame)
-        self.assertEqual(ichimoku.name, 'ICHIMOKU_9_26_52')
-        self.assertEqual(span.name, 'ICHISPAN_9_26')
+        self.assertEqual(ichimoku.name, "ICHIMOKU_9_26_52")
+        self.assertEqual(span.name, "ICHISPAN_9_26")
 
     def test_linreg(self):
-        result = self.overlap.linreg(self.close)
+        result = pandas_ta.linreg(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'LR_14')
+        self.assertEqual(result.name, "LR_14")
 
         try:
             expected = tal.LINEARREG(self.close)
@@ -120,9 +137,9 @@ class TestOverlap(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_linreg_angle(self):
-        result = self.overlap.linreg(self.close, angle=True)
+        result = pandas_ta.linreg(self.close, angle=True)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'LRa_14')
+        self.assertEqual(result.name, "LRa_14")
 
         try:
             expected = tal.LINEARREG_ANGLE(self.close)
@@ -135,9 +152,9 @@ class TestOverlap(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_linreg_intercept(self):
-        result = self.overlap.linreg(self.close, intercept=True)
+        result = pandas_ta.linreg(self.close, intercept=True)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'LRb_14')
+        self.assertEqual(result.name, "LRb_14")
 
         try:
             expected = tal.LINEARREG_INTERCEPT(self.close)
@@ -150,14 +167,14 @@ class TestOverlap(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_linreg_r(self):
-        result = self.overlap.linreg(self.close, r=True)
+        result = pandas_ta.linreg(self.close, r=True)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'LRr_14')
+        self.assertEqual(result.name, "LRr_14")
 
     def test_linreg_slope(self):
-        result = self.overlap.linreg(self.close, slope=True)
+        result = pandas_ta.linreg(self.close, slope=True)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'LRm_14')
+        self.assertEqual(result.name, "LRm_14")
 
         try:
             expected = tal.LINEARREG_SLOPE(self.close)
@@ -169,10 +186,28 @@ class TestOverlap(TestCase):
             except Exception as ex:
                 error_analysis(result, CORRELATION, ex)
 
-    def test_midpoint(self):
-        result = self.overlap.midpoint(self.close)
+    def test_ma(self):
+        result = pandas_ta.ma()
+        self.assertIsInstance(result, list)
+        self.assertGreater(len(result), 0)
+
+        result = pandas_ta.ma("ema", self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'MIDPOINT_2')
+        self.assertEqual(result.name, "EMA_10")
+
+        result = pandas_ta.ma("fwma", self.close, length=15)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "FWMA_15")
+
+    def test_mcgd(self):
+        result = pandas_ta.mcgd(self.close)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "MCGD_10")
+
+    def test_midpoint(self):
+        result = pandas_ta.midpoint(self.close)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "MIDPOINT_2")
 
         try:
             expected = tal.MIDPOINT(self.close, 2)
@@ -185,9 +220,9 @@ class TestOverlap(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_midprice(self):
-        result = self.overlap.midprice(self.high, self.low)
+        result = pandas_ta.midprice(self.high, self.low)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'MIDPRICE_2')
+        self.assertEqual(result.name, "MIDPRICE_2")
 
         try:
             expected = tal.MIDPRICE(self.high, self.low, 2)
@@ -200,24 +235,29 @@ class TestOverlap(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_ohlc4(self):
-        result = self.overlap.ohlc4(self.open, self.high, self.low, self.close)
+        result = pandas_ta.ohlc4(self.open, self.high, self.low, self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'OHLC4')
+        self.assertEqual(result.name, "OHLC4")
 
     def test_pwma(self):
-        result = self.overlap.pwma(self.close)
+        result = pandas_ta.pwma(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'PWMA_10')
+        self.assertEqual(result.name, "PWMA_10")
 
     def test_rma(self):
-        result = self.overlap.rma(self.close)
+        result = pandas_ta.rma(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'RMA_10')
+        self.assertEqual(result.name, "RMA_10")
+
+    def test_sinwma(self):
+        result = pandas_ta.sinwma(self.close)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "SINWMA_14")
 
     def test_sma(self):
-        result = self.overlap.sma(self.close)
+        result = pandas_ta.sma(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'SMA_10')
+        self.assertEqual(result.name, "SMA_10")
 
         try:
             expected = tal.SMA(self.close, 10)
@@ -229,10 +269,29 @@ class TestOverlap(TestCase):
             except Exception as ex:
                 error_analysis(result, CORRELATION, ex)
 
-    def test_t3(self):
-        result = self.overlap.t3(self.close)
+    def test_ssf(self):
+        result = pandas_ta.ssf(self.close, poles=2)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'T3_10_0.7')
+        self.assertEqual(result.name, "SSF_10_2")
+
+        result = pandas_ta.ssf(self.close, poles=3)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "SSF_10_3")
+
+    def test_swma(self):
+        result = pandas_ta.swma(self.close)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "SWMA_10")
+
+    def test_supertrend(self):
+        result = pandas_ta.supertrend(self.high, self.low, self.close)
+        self.assertIsInstance(result, DataFrame)
+        self.assertEqual(result.name, "SUPERT_7_3.0")
+
+    def test_t3(self):
+        result = pandas_ta.t3(self.close)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "T3_10_0.7")
 
         try:
             expected = tal.T3(self.close, 10)
@@ -245,9 +304,9 @@ class TestOverlap(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_tema(self):
-        result = self.overlap.tema(self.close)
+        result = pandas_ta.tema(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'TEMA_10')
+        self.assertEqual(result.name, "TEMA_10")
 
         try:
             expected = tal.TEMA(self.close, 10)
@@ -260,9 +319,9 @@ class TestOverlap(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_trima(self):
-        result = self.overlap.trima(self.close)
+        result = pandas_ta.trima(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'TRIMA_10')
+        self.assertEqual(result.name, "TRIMA_10")
 
         try:
             expected = tal.TRIMA(self.close, 10)
@@ -274,20 +333,40 @@ class TestOverlap(TestCase):
             except Exception as ex:
                 error_analysis(result, CORRELATION, ex)
 
-    def test_vwap(self):
-        result = self.overlap.vwap(self.high, self.low, self.close, self.volume)
+    def test_vidya(self):
+        result = pandas_ta.vidya(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'VWAP')
+        self.assertEqual(result.name, "VIDYA_14")
+
+    def test_vwap(self):
+        result = pandas_ta.vwap(self.high, self.low, self.close, self.volume)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "VWAP_D")
 
     def test_vwma(self):
-        result = self.overlap.vwma(self.close, self.volume)
+        result = pandas_ta.vwma(self.close, self.volume)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'VWMA_10')
+        self.assertEqual(result.name, "VWMA_10")
+
+    def test_wcp(self):
+        result = pandas_ta.wcp(self.high, self.low, self.close)
+        self.assertIsInstance(result, Series)
+        self.assertEqual(result.name, "WCP")
+
+        try:
+            expected = tal.WCLPRICE(self.high, self.low, self.close)
+            pdt.assert_series_equal(result, expected, check_names=False)
+        except AssertionError as ae:
+            try:
+                corr = pandas_ta.utils.df_error_analysis(result, expected, col=CORRELATION)
+                self.assertGreater(corr, CORRELATION_THRESHOLD)
+            except Exception as ex:
+                error_analysis(result, CORRELATION, ex)
 
     def test_wma(self):
-        result = self.overlap.wma(self.close)
+        result = pandas_ta.wma(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'WMA_10')
+        self.assertEqual(result.name, "WMA_10")
 
         try:
             expected = tal.WMA(self.close, 10)
@@ -300,6 +379,6 @@ class TestOverlap(TestCase):
                 error_analysis(result, CORRELATION, ex)
 
     def test_zlma(self):
-        result = self.overlap.zlma(self.close)
+        result = pandas_ta.zlma(self.close)
         self.assertIsInstance(result, Series)
-        self.assertEqual(result.name, 'ZLEMA_10')
+        self.assertEqual(result.name, "ZL_EMA_10")
